@@ -16,13 +16,13 @@ def main():
 
     # Get spreadsheet data
     sheets = authenticate_sheets(API_KEY)
-    result = sheets.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE).execute()
-    values = result.get("values", [])
+    try:
+        result = sheets.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE).execute()
+        values = result.get("values", [])
+    except:
+        raise Exception("ERROR: get data failed. Data does not exist or was spelled incorrectly.")
 
-    if not values:
-        print("ERROR: get data failed")
-    else:
-        print(values)
+    print(values)
     
     return 0
 
