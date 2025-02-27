@@ -1,2 +1,7 @@
 # Environment file
 .env
+
+# Budget plots
+plots/*
+!plots/.gitignore
+!plots/README.md
