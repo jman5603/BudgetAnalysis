@@ -3,5 +3,8 @@
 
 # Budget plots
 plots/*
-!plots/.gitignore
 !plots/README.md
+
+# Budget summaries
+reports/*
+!reports/README.md
