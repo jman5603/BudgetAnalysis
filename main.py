@@ -2,6 +2,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
+from datetime import datetime
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from openai import OpenAI
@@ -23,7 +24,7 @@ def build_pdf(date, values):
     c.setFont("Helvetica-Bold", 16)
     c.drawString(200, 700, "Budget Report for " + date)
     c.setFont("Helvetica", 12)
-    c.drawImage("plots/pie_chart.png", width - 516, 450, width=344, height=235, mask='auto')
+    c.drawImage("plots/" + date.replace(" ", "") + "PieChart.png", width - 516, 450, width=344, height=235, mask='auto')
 
     # Gather table data
     over = []
@@ -77,15 +78,21 @@ def build_pdf(date, values):
     over_width, over_height = over_table.wrap(0, 0)
     under_width, under_height = under_table.wrap(0, 0)
 
+    # Calculate the starting positions for the tables
+    total_table_width = over_width + under_width
+    start_x = (width - total_table_width) / 2  # Center the tables horizontally
+
     # Add the "over" table title and table to the PDF
-    c.drawString(60, 400, "Over Budget")
+    c.drawString(start_x, 400, "Over Budget")
     over_table.wrapOn(c, width, height)
-    over_table.drawOn(c, 60, height - 400 - over_height)
+    # over_table.drawOn(c, 60, height - 400 - over_height)
+    over_table.drawOn(c, start_x, height - 400 - over_height)
     
     # Add the "under" table title and table to the PDF
-    c.drawString(290, 400, "Under Budget")
+    c.drawString(start_x + over_width, 400, "Under Budget")
     under_table.wrapOn(c, width, height)
-    under_table.drawOn(c, 290, height - 400 - under_height)
+    # under_table.drawOn(c, 290, height - 400 - under_height)
+    under_table.drawOn(c, start_x + over_width, height - 400 - under_height)
 
     # Differential title
     c.setFont("Helvetica-Bold", 16)
@@ -128,17 +135,30 @@ def chatgpt(data):
     )
     return response.choices[0].message.content
 
+def get_date():
+    date = datetime.now().strftime("%B %Y")
+    # Change month number to month name
+    
+
 def main():
     # Load .env and retrieve variables
     load_dotenv()
     API_KEY = os.getenv("API_KEY")
     SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
     # date = input("Enter a month to retrieve data (format '<Month> <year>', 'February 2025' for example):\n")
-    date = "February 2025"
+    # TODO: Add logic for getting the date either from user input or from the system
+    date = "April 2025"
     if date == "February 2025":
         RANGE = "February 2025!A2:C13"
     else:
         RANGE = date + os.getenv("RANGE")
+
+    try:
+        open("reports/" + date.replace(" ", "") + "Summary.pdf", "r")
+        print("Report already exists for this month.")
+        return 0
+    except:
+        pass
 
     # Get spreadsheet data
     sheets = authenticate_sheets(API_KEY)
@@ -158,7 +178,7 @@ def main():
 
     plt.pie(spend, labels=labels, autopct='%1.1f%%')
     plt.tight_layout()
-    plt.savefig("plots/pie_chart.png", bbox_inches='tight')
+    plt.savefig("plots/" + date.replace(' ', '') + "PieChart.png", bbox_inches='tight')
     plt.clf()
 
     build_pdf(date, values)
