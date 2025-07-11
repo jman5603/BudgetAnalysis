@@ -1,8 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from openai import OpenAI
@@ -100,7 +99,7 @@ def build_pdf(date, values):
     c.setFont("Helvetica", 12)
 
     # Add summary of the month
-    summary = chatgpt(values)
+    summary = chatgpt(values, date)
 
     # Create a Paragraph object for the summary
     styles = getSampleStyleSheet()
@@ -112,7 +111,7 @@ def build_pdf(date, values):
 
     c.save()
 
-def chatgpt(data):
+def chatgpt(data, date):
     API_KEY = os.getenv("OPENAI_KEY")
 
     client = OpenAI(api_key=API_KEY)
@@ -123,7 +122,7 @@ def chatgpt(data):
             {"role": "system", "content": "You are a budgeting assistant."},
             {
                 "role": "user",
-                "content": "I need help with my budget for February 2025. \
+                "content": "I need help with my budget for " + date + ". \
                     This is a list of my expenses for the month, with the \
                         first element being the category, the second the \
                             budget, and the third the actual amount spent. \
@@ -136,8 +135,11 @@ def chatgpt(data):
     return response.choices[0].message.content
 
 def get_date():
-    date = datetime.now().strftime("%B %Y")
-    # Change month number to month name
+    # Returns the previous month in the format "Month Year"
+    today = datetime.now()
+    first_day_of_current_month = today.replace(day=1)
+    last_month = first_day_of_current_month - timedelta(days=1)
+    return last_month.strftime("%B %Y")
     
 
 def main():
@@ -147,7 +149,7 @@ def main():
     SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
     # date = input("Enter a month to retrieve data (format '<Month> <year>', 'February 2025' for example):\n")
     # TODO: Add logic for getting the date either from user input or from the system
-    date = "April 2025"
+    date = get_date()
     if date == "February 2025":
         RANGE = "February 2025!A2:C13"
     else:
@@ -166,7 +168,7 @@ def main():
         result = sheets.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE).execute()
         values = result.get("values", [])
     except:
-        raise Exception("ERROR: get data failed. Data does not exist or was spelled incorrectly.")
+        raise Exception("ERROR: get data failed. Data does not exist.")
 
     # Build charts
     # Filter out categories with zero spend
